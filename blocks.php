@@ -1,17 +1,17 @@
 <?php
 /**
- * Call
+ * Blocks
  *
  * Eresus 2
  *
- * Вызов других плагинов посредством макросов.
+ * Управление текстовыми блоками
  *
- * @version 2.00
+ * @version 2.04
  *
  * @copyright   2005-2006, ProCreat Systems, http://procreat.ru/
- * @copyright   2007, Eresus Group, http://eresus.ru/
+ * @copyright   2007-2008, Eresus Group, http://eresus.ru/
  * @license     http://www.gnu.org/licenses/gpl.txt  GPL License 3
- * @maintainer  Михалыч <mk@procreat.ru>
+ * @maintainer  Mikhail Krasilnikov <mk@procreat.ru>
  * @author      Mikhail Krasilnikov <mk@procreat.ru>
  *
  * Данная программа является свободным программным обеспечением. Вы
@@ -31,7 +31,7 @@ class TBlocks extends TListContentPlugin {
   var $name = 'blocks';
   var $title = 'Блоки';
   var $type = 'client,admin';
-  var $version = '2.03';
+  var $version = '2.04';
   var $description = 'Система управления текстовыми блоками';
   var $table = array (
     'name' => 'blocks',
@@ -70,15 +70,17 @@ class TBlocks extends TListContentPlugin {
       KEY `target` (`target`)
     ) TYPE=MyISAM COMMENT='Content blocks';",
   );
-  #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
-  # Стандартные функции
-  #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
-  function TBlocks()
-  # производит регистрацию обработчиков событий
-  {
-  global $plugins;
 
-    parent::TPlugin();
+  /**
+   * Конструктор
+   *
+   * @return TBlocks
+   */
+  function TBlocks()
+  {
+  	global $plugins;
+
+    parent::TListContentPlugin();
     if (defined('CLIENTUI')) {
       $plugins->events['clientOnContentRender'][] = $this->name;
       $plugins->events['clientOnPageRender'][] = $this->name;
@@ -89,7 +91,8 @@ class TBlocks extends TListContentPlugin {
   #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
   function menuBranch($owner = 0, $level = 0)
   {
-  global $db;
+  	global $db;
+
     $result = array(array(), array());
     $items = $db->select('`pages`', "(`access`>='".USER."')AND(`owner`='".$owner."') AND (`active`='1')", "`position`", false, "`id`,`caption`");
     if (count($items)) foreach($items as $item) {
@@ -106,10 +109,11 @@ class TBlocks extends TListContentPlugin {
   #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
   function insert()
   {
-  global $db, $request;
+  	global $db, $request;
 
     $item = GetArgs($db->fields($this->table['name']));
     if (isset($item['section'])) $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
+    $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
     $db->insert($this->table['name'], $item);
     sendNotify('Добавлен блок: '.$item['caption']);
@@ -123,26 +127,11 @@ class TBlocks extends TListContentPlugin {
     $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
     $item = GetArgs($item);
     $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
+    $item['content'] = arg('content', 'dbsafe');
     $db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
     sendNotify('Изменен блок: '.$item['caption']);
     goto($request['arg']['submitURL']);
-  }
-  #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
-  function toggle($id)
-  {
-  global $db, $page, $request;
-
-    $item = $db->selectItem($this->table['name'], "`id`='".$id."'");
-    $item['active'] = !$item['active'];
-    $db->updateItem($this->table['name'], $item, "`id`='".$id."'");
-    sendNotify(($item['active']?admActivated:admDeactivated).': '.'<a href="'.str_replace('toggle','id',$request['url']).'">'.$item['caption'].'</a>', array('title'=>$this->title));
-    goto($page->url());
-  }
-  #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
-  function delete($id)
-  {
-    parent::delete($id);
   }
   #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
   # Административные функции
@@ -271,5 +260,3 @@ class TBlocks extends TListContentPlugin {
   }
   #--------------------------------------------------------------------------------------------------------------------------------------------------------------#
 }
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-#
-?>
