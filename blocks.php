@@ -6,7 +6,7 @@
  *
  * Управление текстовыми блоками
  *
- * @version 2.04
+ * @version 2.05
  *
  * @copyright   2005-2006, ProCreat Systems, http://procreat.ru/
  * @copyright   2007-2008, Eresus Group, http://eresus.ru/
@@ -31,7 +31,7 @@ class TBlocks extends TListContentPlugin {
   var $name = 'blocks';
   var $title = 'Блоки';
   var $type = 'client,admin';
-  var $version = '2.04';
+  var $version = '2.05a';
   var $description = 'Система управления текстовыми блоками';
   var $table = array (
     'name' => 'blocks',
