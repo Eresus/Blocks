@@ -45,6 +45,12 @@ class TBlocks extends TListContentPlugin
   public $name = 'blocks';
 
   /**
+   * Требуемая версия ядра
+   * @var string
+   */
+  public $kernel = '2.12';
+
+  /**
    * Название плагина
    * @var string
    */
@@ -167,7 +173,7 @@ class TBlocks extends TListContentPlugin
     $item['active'] = true;
     $db->insert($this->table['name'], $item);
     sendNotify('Добавлен блок: '.$item['caption']);
-    goto($request['arg']['submitURL']);
+    HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
 
@@ -186,7 +192,7 @@ class TBlocks extends TListContentPlugin
     $db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
     sendNotify('Изменен блок: '.$item['caption']);
-    goto($request['arg']['submitURL']);
+    HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
 
