@@ -66,7 +66,7 @@ class TBlocks extends TListContentPlugin
    * Версия плагина
    * @var string
    */
-  public $version = '2.05a';
+  public $version = '2.05b';
 
   /**
    * Описание плагина
