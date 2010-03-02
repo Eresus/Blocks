@@ -48,7 +48,7 @@ class TBlocks extends TListContentPlugin
    * Требуемая версия ядра
    * @var string
    */
-  public $kernel = '2.12';
+  public $kernel = '2.12b';
 
   /**
    * Название плагина
@@ -122,11 +122,11 @@ class TBlocks extends TListContentPlugin
    *
    * @return TBlocks
    */
-  public function TBlocks()
+  public function __construct()
   {
   	global $plugins;
 
-    parent::TListContentPlugin();
+    parent::__construct();
     if (defined('CLIENTUI')) {
       $plugins->events['clientOnContentRender'][] = $this->name;
       $plugins->events['clientOnPageRender'][] = $this->name;
