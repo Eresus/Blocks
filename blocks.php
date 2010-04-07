@@ -48,7 +48,7 @@ class TBlocks extends TListContentPlugin
    * Требуемая версия ядра
    * @var string
    */
-  public $kernel = '2.12b';
+  public $kernel = '2.12';
 
   /**
    * Название плагина
@@ -66,7 +66,7 @@ class TBlocks extends TListContentPlugin
    * Версия плагина
    * @var string
    */
-  public $version = '2.05b';
+  public $version = '2.05';
 
   /**
    * Описание плагина
