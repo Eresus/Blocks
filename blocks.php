@@ -2,11 +2,9 @@
 /**
  * Blocks
  *
- * Eresus 2
- *
  * Управление текстовыми блоками
  *
- * @version 2.05
+ * @version 3.00
  *
  * @copyright 2005, ProCreat Systems, http://procreat.ru/
  * @copyright 2007, Eresus Group, http://eresus.ru/
@@ -36,13 +34,9 @@
  *
  * @package Blocks
  */
-class TBlocks extends TListContentPlugin
+//class TBlocks extends TListContentPlugin
+class Blocks extends Plugin
 {
-	/**
-	 * Имя плагина
-	 * @var string
-	 */
-  public $name = 'blocks';
 
   /**
    * Требуемая версия ядра
@@ -66,13 +60,13 @@ class TBlocks extends TListContentPlugin
    * Версия плагина
    * @var string
    */
-  public $version = '2.05a';
+  public $version = '3.00a';
 
   /**
    * Описание плагина
    * @var string
    */
-  public  $description = 'Система управления текстовыми блоками';
+  public $description = 'Система управления текстовыми блоками';
 
   /**
    * Описание таблицы данных
@@ -172,7 +166,6 @@ class TBlocks extends TListContentPlugin
     $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
     $db->insert($this->table['name'], $item);
-    sendNotify('Добавлен блок: '.$item['caption']);
     HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
@@ -190,8 +183,6 @@ class TBlocks extends TListContentPlugin
     $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
     $item['content'] = arg('content', 'dbsafe');
     $db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
-    $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
-    sendNotify('Изменен блок: '.$item['caption']);
     HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
