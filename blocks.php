@@ -34,7 +34,6 @@
  *
  * @package Blocks
  */
-//class TBlocks extends TListContentPlugin
 class Blocks extends Plugin
 {
 
@@ -42,7 +41,7 @@ class Blocks extends Plugin
    * Требуемая версия ядра
    * @var string
    */
-  public $kernel = '2.12b';
+  public $kernel = '2.12';
 
   /**
    * Название плагина
@@ -118,13 +117,15 @@ class Blocks extends Plugin
    */
   public function __construct()
   {
-  	global $plugins;
-
     parent::__construct();
-    if (defined('CLIENTUI')) {
-      $plugins->events['clientOnContentRender'][] = $this->name;
-      $plugins->events['clientOnPageRender'][] = $this->name;
-    } else $plugins->events['adminOnMenuRender'][] = $this->name;
+    if (defined('CLIENTUI'))
+    {
+      $this->listenEvents('clientOnContentRender', 'clientOnPageRender');
+    }
+    else
+    {
+    	$this->listenEvents('adminOnMenuRender');
+    }
   }
   //-----------------------------------------------------------------------------
 
@@ -136,18 +137,36 @@ class Blocks extends Plugin
    */
   public function menuBranch($owner = 0, $level = 0)
   {
-  	global $db;
-
     $result = array(array(), array());
-    $items = $db->select('`pages`', "(`access`>='".USER."')AND(`owner`='".$owner."') AND (`active`='1')", "`position`", false, "`id`,`caption`");
-    if (count($items)) foreach($items as $item) {
-      $result[0][] = str_repeat('- ', $level).$item['caption'];
-      $result[1][] = $item['id'];
-      $sub = $this->menuBranch($item['id'], $level+1);
-      if (count($sub[0])) {
-        $result[0] = array_merge($result[0], $sub[0]);
-        $result[1] = array_merge($result[1], $sub[1]);
-      }
+
+    $q = DB::getHandler()->createSelectQuery();
+    $e = $q->expr;
+    $q->select('id', 'caption')
+    	->from('pages')
+    	->where(
+    		$e->lAnd(
+    			$e->gte('access', USER),
+    			$e->eq('owner', $q->bindValue($owner, null, PDO::PARAM_INT)),
+    			$e->eq('active', true)
+    		)
+    	)
+    	->orderBy('position');
+
+    $items = DB::fetchAll($q);
+
+    if (count($items))
+    {
+    	foreach($items as $item)
+    	{
+	      $result[0][] = str_repeat('- ', $level).$item['caption'];
+	      $result[1][] = $item['id'];
+	      $sub = $this->menuBranch($item['id'], $level+1);
+	      if (count($sub[0]))
+	      {
+	        $result[0] = array_merge($result[0], $sub[0]);
+	        $result[1] = array_merge($result[1], $sub[1]);
+	      }
+    	}
     }
     return $result;
   }
@@ -159,13 +178,16 @@ class Blocks extends Plugin
    */
   public function insert()
   {
-  	global $db, $request;
+  	global $Eresus, $request;
 
-    $item = GetArgs($db->fields($this->table['name']));
-    if (isset($item['section'])) $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
+    $item = GetArgs($Eresus->db->fields($this->table['name']));
+    if (isset($item['section']))
+    {
+    	$item['section'] = $item['section'] != 'all' ? '|' . implode('|', $request['arg']['section']) . '|' : '|all|';
+    }
     $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
-    $db->insert($this->table['name'], $item);
+    $Eresus->db->insert($this->table['name'], $item);
     HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
@@ -176,13 +198,13 @@ class Blocks extends Plugin
    */
   public function update()
   {
-  global $db, $request;
+  	global $Eresus, $request;
 
-    $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
+    $item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
     $item = GetArgs($item);
-    $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
+    $item['section'] = $item['section'] != 'all' ? '|'.implode('|', $request['arg']['section']) . '|' : '|all|';
     $item['content'] = arg('content', 'dbsafe');
-    $db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
+    $Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
@@ -193,7 +215,7 @@ class Blocks extends Plugin
    */
   public function create()
   {
-  global $page, $db;
+  	global $page;
 
     $sections = array(array(), array());
     $sections = $this->menuBranch();
@@ -226,10 +248,10 @@ class Blocks extends Plugin
    */
   public function edit()
   {
-  global $page, $db, $request;
+  global $page, $Eresus, $request;
 
-    $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
-    $item['section'] = explode(':', $item['section']);
+    $item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
+    $item['section'] = explode('|', $item['section']);
     $sections = array(array(), array());
     $sections = $this->menuBranch();
     array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
@@ -262,11 +284,11 @@ class Blocks extends Plugin
    */
   public function adminRender()
   {
-  global $db, $page, $user, $request, $session;
+  	global $Eresus, $page, $user, $request, $session;
 
     $result = '';
     if (isset($request['arg']['id'])) {
-      $item = $db->selectItem($this->table['name'], "`".$this->table['key']."` = '".$request['arg']['id']."'");
+      $item = $Eresus->db->selectItem($this->table['name'], "`".$this->table['key']."` = '".$request['arg']['id']."'");
       $page->title .= empty($item['caption'])?'':' - '.$item['caption'];
     }
     if (isset($request['arg']['update']) && isset($this->table['controls']['edit'])) {
@@ -291,20 +313,55 @@ class Blocks extends Plugin
   //-----------------------------------------------------------------------------
 
   /**
-   * ???
-   * @param $source
-   * @param $target
-   * @return unknown_type
+   * Подставляет блоки в текст
+   *
+   * @param string $source  Исходный текст
+   * @param string $target  "page" или "template"
+   *
+   * @return string  Обработанный текст
    */
-  public function renderBlocks($source, $target)
+  private function renderBlocks($source, $target)
   {
-    global $db, $page, $request;
+    global $Eresus, $page, $request;
+
+    // Эта переменная будет заполнена позднее в цикле
+    $blockName = null;
+
+    $q = DB::getHandler()->createSelectQuery();
+    $e = $q->expr;
+    $q->select('*')
+    	->from($this->__table(''))
+    	->where(
+    		$e->lAnd(
+    			$e->eq('active', $q->bindValue(true)),
+    			$e->lOr(
+    				$e->like('section', $q->bindValue('%|all|%')),
+    				$e->like('section', $q->bindValue('%|' . $page->id . '|%'))
+    			),
+    			$e->eq('block', $q->bindParam($blockName)),
+    			$e->eq('target', $q->bindValue($target))
+    		)
+    	)
+    	->orderBy('priority', ezcQuerySelect::DESC);
 
     preg_match_all('/\$\(Blocks:([^\)]+)\)/', $source, $blocks);
-    foreach($blocks[1] as $block) {
-      $sql = "(`active`=1) AND (`section` LIKE '%:".$page->id.":%' OR `section` = ':all:') AND (`block`='".$block."') AND (`target` = '".$target."')";
-      $item = $db->select($this->name, $sql, '`priority`', true);
-      if (count($item)) $source = str_replace('$(Blocks:'.$block.')', trim($item[0]['content']), $source);
+    foreach ($blocks[1] as $block)
+    {
+      $blockName = $block;
+      try
+      {
+      	$item = DB::fetch($q);
+      }
+      catch (DBQueryException $e)
+      {
+      	Core::logException($e);
+      	$item = null;
+      }
+
+      if ($item)
+      {
+      	$source = str_replace('$(Blocks:'.$block.')', trim($item['content']), $source);
+      }
     }
     return $source;
   }
@@ -336,9 +393,10 @@ class Blocks extends Plugin
   //-----------------------------------------------------------------------------
 
   /**
-   * ???
-   * @param $text
-   * @return unknown_type
+   * Подставляет блоки в отрисованную страницу
+   *
+   * @param string $text  Содержимое страницы
+   * @return string
    */
   public function clientOnPageRender($text)
   {
@@ -346,4 +404,69 @@ class Blocks extends Plugin
     return $text;
   }
   //-----------------------------------------------------------------------------
+
+	private function adminRenderContent()
+	{
+	global $Eresus, $page;
+
+		$result = '';
+		if (!is_null(arg('id'))) {
+			$item = $Eresus->db->selectItem($this->table['name'], "`".$this->table['key']."` = '".arg('id', 'dbsafe')."'");
+			$page->title .= empty($item['caption'])?'':' - '.$item['caption'];
+		}
+		switch (true) {
+			case !is_null(arg('update')) && isset($this->table['controls']['edit']):
+				if (method_exists($this, 'update')) $result = $this->update(); else ErrorMessage(sprintf(errMethodNotFound, 'update', get_class($this)));
+			break;
+			case !is_null(arg('toggle')) && isset($this->table['controls']['toggle']):
+				if (method_exists($this, 'toggle')) $result = $this->toggle(arg('toggle', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'toggle', get_class($this)));
+			break;
+			case !is_null(arg('delete')) && isset($this->table['controls']['delete']):
+				if (method_exists($this, 'delete')) $result = $this->delete(arg('delete', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'delete', get_class($this)));
+			break;
+			case !is_null(arg('up')) && isset($this->table['controls']['position']):
+				if (method_exists($this, 'up')) $result = $this->table['sortDesc']?$this->down(arg('up', 'dbsafe')):$this->up(arg('up', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'up', get_class($this)));
+			break;
+			case !is_null(arg('down')) && isset($this->table['controls']['position']):
+				if (method_exists($this, 'down')) $result = $this->table['sortDesc']?$this->up(arg('down', 'dbsafe')):$this->down(arg('down', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'down', get_class($this)));
+			break;
+			case !is_null(arg('id')) && isset($this->table['controls']['edit']):
+				if (method_exists($this, 'adminEditItem')) $result = $this->adminEditItem(); else ErrorMessage(sprintf(errMethodNotFound, 'adminEditItem', get_class($this)));
+			break;
+			case !is_null(arg('action')):
+				switch (arg('action')) {
+					case 'create': if (isset($this->table['controls']['edit']))
+						if (method_exists($this, 'adminAddItem')) $result = $this->adminAddItem();
+						else ErrorMessage(sprintf(errMethodNotFound, 'adminAddItem', get_class($this)));
+					break;
+					case 'insert':
+						if (method_exists($this, 'insert')) $result = $this->insert();
+						else ErrorMessage(sprintf(errMethodNotFound, 'insert', get_class($this)));
+					break;
+				}
+			break;
+			default:
+				if (!is_null(arg('section'))) $this->table['condition'] = "`section`='".arg('section', 'int')."'";
+				$result = $page->renderTable($this->table);
+		}
+		return $result;
+	}
+
+	function install()
+	{
+		$this->createTable($this->table);
+		parent::install();
+	}
+
+	function uninstall()
+	{
+		parent::uninstall();
+	}
+
+	function createTable($table)
+	{
+		global $Eresus;
+
+		$Eresus->db->query('CREATE TABLE IF NOT EXISTS `'.$Eresus->db->prefix.$table['name'].'`'.$table['sql']);
+	}
 }
