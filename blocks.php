@@ -174,17 +174,22 @@ class Blocks extends Plugin
 
   /**
    * ???
-   * @return unknown_type
+   * @return void
    */
   public function insert()
   {
   	global $Eresus, $request;
 
     $item = GetArgs($Eresus->db->fields($this->table['name']));
-    if (isset($item['section']))
+    if ($item['section'] && $item['section'] != 'all')
     {
-    	$item['section'] = $item['section'] != 'all' ? '|' . implode('|', $request['arg']['section']) . '|' : '|all|';
+    	$item['section'] = '|' . implode('|', arg('section')) . '|';
     }
+    else
+    {
+    	$item['section'] = '|all|';
+    }
+
     $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
     $Eresus->db->insert($this->table['name'], $item);
@@ -194,15 +199,22 @@ class Blocks extends Plugin
 
   /**
    * ???
-   * @return unknown_type
+   * @return void
    */
   public function update()
   {
   	global $Eresus, $request;
 
-    $item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
+    $item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
     $item = GetArgs($item);
-    $item['section'] = $item['section'] != 'all' ? '|'.implode('|', $request['arg']['section']) . '|' : '|all|';
+    if ($item['section'] && $item['section'] != 'all')
+    {
+    	$item['section'] = '|' . implode('|', arg('section')) . '|';
+    }
+    else
+    {
+    	$item['section'] = '|all|';
+    }
     $item['content'] = arg('content', 'dbsafe');
     $Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     HTTP::redirect($request['arg']['submitURL']);
