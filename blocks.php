@@ -301,26 +301,44 @@ class Blocks extends Plugin
   	global $Eresus, $page, $user, $request, $session;
 
     $result = '';
-    if (isset($request['arg']['id'])) {
-      $item = $Eresus->db->selectItem($this->table['name'], "`".$this->table['key']."` = '".$request['arg']['id']."'");
-      $page->title .= empty($item['caption'])?'':' - '.$item['caption'];
+    if (arg('id'))
+    {
+      $item = $Eresus->db->selectItem($this->table['name'],
+      	"`" . $this->table['key'] . "` = '" . arg('id', 'int') . "'");
+      $page->title .= empty($item['caption']) ? '' : ' - ' . $item['caption'];
     }
-    if (isset($request['arg']['update']) && isset($this->table['controls']['edit'])) {
-      if (method_exists($this, 'update')) $result = $this->update(); else $session['errorMessage'] = sprintf(errMethodNotFound, 'update', get_class($this));
-    } elseif (isset($request['arg']['toggle']) && isset($this->table['controls']['toggle'])) {
-      if (method_exists($this, 'toggle')) $result = $this->toggle($request['arg']['toggle']); else $session['errorMessage'] = sprintf(errMethodNotFound, 'toggle', get_class($this));
-    } elseif (isset($request['arg']['delete']) && isset($this->table['controls']['delete'])) {
-      if (method_exists($this, 'delete')) $result = $this->delete($request['arg']['delete']); else $session['errorMessage'] = sprintf(errMethodNotFound, 'delete', get_class($this));
-    } elseif (isset($request['arg']['id']) && isset($this->table['controls']['edit'])) {
-      if (method_exists($this, 'edit')) $result = $this->edit(); else $session['errorMessage'] = sprintf(errMethodNotFound, 'edit', get_class($this));
-    } elseif (isset($request['arg']['action'])) switch ($request['arg']['action']) {
-      case 'create': $result = $this->create(); break;
-      case 'insert':
-        if (method_exists($this, 'insert')) $result = $this->insert();
-        else $session['errorMessage'] = sprintf(errMethodNotFound, 'insert', get_class($this));
-      break;
-    } else {
-      $result = $page->renderTable($this->table);
+    if (arg('update'))
+    {
+      $result = $this->update();
+    }
+    elseif (arg('toggle'))
+    {
+      $result = $this->toggle(arg('toggle', 'int'));
+    }
+    elseif (arg('delete'))
+    {
+      $result = $this->delete(arg('delete', 'int'));
+    }
+    elseif (arg('id'))
+    {
+      $result = $this->edit();
+    }
+    else
+    {
+    	switch (arg('action'))
+    	{
+    		case 'create':
+    			$result = $this->create();
+    		break;
+
+    		case 'insert':
+    			$result = $this->insert();
+    		break;
+
+    		default:
+    			$result = $page->renderTable($this->table);
+    		break;
+    	}
     }
     return $result;
   }
@@ -424,7 +442,8 @@ class Blocks extends Plugin
 	global $Eresus, $page;
 
 		$result = '';
-		if (!is_null(arg('id'))) {
+		if (!is_null(arg('id')))
+		{
 			$item = $Eresus->db->selectItem($this->table['name'], "`".$this->table['key']."` = '".arg('id', 'dbsafe')."'");
 			$page->title .= empty($item['caption'])?'':' - '.$item['caption'];
 		}
@@ -483,4 +502,36 @@ class Blocks extends Plugin
 
 		$Eresus->db->query('CREATE TABLE IF NOT EXISTS `'.$Eresus->db->prefix.$table['name'].'`'.$table['sql']);
 	}
+
+	//-----------------------------------------------------------------------------
+	private function toggle($id)
+	{
+		global $page;
+
+		$q = DB::getHandler()->createUpdateQuery();
+		$e = $q->expr;
+		$q->update($this->table['name'])
+			->set('active', $e->not('active'))
+			->where($e->eq('id', $id));
+		DB::execute($q);
+
+		HTTP::redirect(str_replace('&amp;', '&', $page->url()));
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Удаление
+	 *
+	 * Перенесено из TListContentPlugin
+	 *
+	 * @param int $id
+	 */
+	private function delete($id)
+	{
+		global $page;
+
+		$this->dbDelete('', $id);
+		HTTP::goback();
+	}
+	//-----------------------------------------------------------------------------
 }
