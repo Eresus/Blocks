@@ -181,9 +181,10 @@ class Blocks extends Plugin
   	global $Eresus, $request;
 
     $item = GetArgs($Eresus->db->fields($this->table['name']));
-    if ($item['section'] && $item['section'] != 'all')
+    $section = arg('section');
+    if ($section && $section != 'all')
     {
-    	$item['section'] = '|' . implode('|', arg('section')) . '|';
+    	$item['section'] = '|' . implode('|', $section) . '|';
     }
     else
     {
@@ -207,9 +208,10 @@ class Blocks extends Plugin
 
     $item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
     $item = GetArgs($item);
-    if ($item['section'] && $item['section'] != 'all')
+    $section = arg('section');
+    if ($section && $section != 'all')
     {
-    	$item['section'] = '|' . implode('|', arg('section')) . '|';
+    	$item['section'] = '|' . implode('|', $section) . '|';
     }
     else
     {
