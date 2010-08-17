@@ -224,8 +224,9 @@ class Blocks extends Plugin
   //-----------------------------------------------------------------------------
 
   /**
-   * ???
-   * @return unknown_type
+   * Возвращает диалог добавления блока
+   *
+   * @return string  HTML
    */
   public function create()
   {
@@ -244,7 +245,7 @@ class Blocks extends Plugin
         array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%', 'maxlength' => '255', 'pattern'=>'/.+/', 'errormsg'=>'Заголовок не может быть пустым!'),
         array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,'items'=>$sections[0], 'values'=>$sections[1]),
         array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px', 'comment' => 'Большие значения - больший приоритет', 'value'=>0, 'pattern'=>'/\d+/', 'errormsg'=>'Приоритет задается только цифрами!'),
-        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31),
+        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31, 'pattern'=>'/.+/', 'errormsg'=>'Имя блока не может быть пустым!'),
         array ('type' => 'select', 'name' => 'target', 'label' => 'Область', 'items' => array('Отрисованная страница','Шаблон страницы'), 'values' => array('page','template')),
         array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
       ),
@@ -279,7 +280,7 @@ class Blocks extends Plugin
         array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%', 'maxlength' => '255', 'pattern'=>'/.+/', 'errormsg'=>'Заголовок не может быть пустым!'),
         array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,'items'=>$sections[0], 'values'=>$sections[1]),
         array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px', 'comment' => 'Большие значения - больший приоритет', 'default'=>0, 'pattern'=>'/\d+/', 'errormsg'=>'Приоритет задается только цифрами!'),
-        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31),
+        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31, 'pattern'=>'/.+/', 'errormsg'=>'Имя блока не может быть пустым!'),
         array ('type' => 'select', 'name' => 'target', 'label' => 'Область', 'items' => array('Отрисованная страница','Шаблон страницы'), 'values' => array('page','template')),
         array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
         array ('type' => 'checkbox', 'name' => 'active', 'label' => 'Активировать'),
