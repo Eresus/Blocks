@@ -2,11 +2,9 @@
 /**
  * Blocks
  *
- * Eresus 2
- *
  * Управление текстовыми блоками
  *
- * @version 2.05
+ * @version 3.00
  *
  * @copyright 2005, ProCreat Systems, http://procreat.ru/
  * @copyright 2007, Eresus Group, http://eresus.ru/
@@ -36,19 +34,14 @@
  *
  * @package Blocks
  */
-class TBlocks extends TListContentPlugin
+class Blocks extends Plugin
 {
-	/**
-	 * Имя плагина
-	 * @var string
-	 */
-  public $name = 'blocks';
 
   /**
    * Требуемая версия ядра
    * @var string
    */
-  public $kernel = '2.12b';
+  public $kernel = '2.12';
 
   /**
    * Название плагина
@@ -66,13 +59,13 @@ class TBlocks extends TListContentPlugin
    * Версия плагина
    * @var string
    */
-  public $version = '2.05b';
+  public $version = '3.00';
 
   /**
    * Описание плагина
    * @var string
    */
-  public  $description = 'Система управления текстовыми блоками';
+  public $description = 'Система управления текстовыми блоками';
 
   /**
    * Описание таблицы данных
@@ -124,13 +117,15 @@ class TBlocks extends TListContentPlugin
    */
   public function __construct()
   {
-  	global $plugins;
-
     parent::__construct();
-    if (defined('CLIENTUI')) {
-      $plugins->events['clientOnContentRender'][] = $this->name;
-      $plugins->events['clientOnPageRender'][] = $this->name;
-    } else $plugins->events['adminOnMenuRender'][] = $this->name;
+    if (defined('CLIENTUI'))
+    {
+      $this->listenEvents('clientOnContentRender', 'clientOnPageRender');
+    }
+    else
+    {
+    	$this->listenEvents('adminOnMenuRender');
+    }
   }
   //-----------------------------------------------------------------------------
 
@@ -142,18 +137,36 @@ class TBlocks extends TListContentPlugin
    */
   public function menuBranch($owner = 0, $level = 0)
   {
-  	global $db;
-
     $result = array(array(), array());
-    $items = $db->select('`pages`', "(`access`>='".USER."')AND(`owner`='".$owner."') AND (`active`='1')", "`position`", false, "`id`,`caption`");
-    if (count($items)) foreach($items as $item) {
-      $result[0][] = str_repeat('- ', $level).$item['caption'];
-      $result[1][] = $item['id'];
-      $sub = $this->menuBranch($item['id'], $level+1);
-      if (count($sub[0])) {
-        $result[0] = array_merge($result[0], $sub[0]);
-        $result[1] = array_merge($result[1], $sub[1]);
-      }
+
+    $q = DB::getHandler()->createSelectQuery();
+    $e = $q->expr;
+    $q->select('id', 'caption')
+    	->from('pages')
+    	->where(
+    		$e->lAnd(
+    			$e->gte('access', USER),
+    			$e->eq('owner', $q->bindValue($owner, null, PDO::PARAM_INT)),
+    			$e->eq('active', true)
+    		)
+    	)
+    	->orderBy('position');
+
+    $items = DB::fetchAll($q);
+
+    if (count($items))
+    {
+    	foreach($items as $item)
+    	{
+	      $result[0][] = str_repeat('- ', $level).$item['caption'];
+	      $result[1][] = $item['id'];
+	      $sub = $this->menuBranch($item['id'], $level+1);
+	      if (count($sub[0]))
+	      {
+	        $result[0] = array_merge($result[0], $sub[0]);
+	        $result[1] = array_merge($result[1], $sub[1]);
+	      }
+    	}
     }
     return $result;
   }
@@ -161,48 +174,63 @@ class TBlocks extends TListContentPlugin
 
   /**
    * ???
-   * @return unknown_type
+   * @return void
    */
   public function insert()
   {
-  	global $db, $request;
+  	global $Eresus, $request;
 
-    $item = GetArgs($db->fields($this->table['name']));
-    if (isset($item['section'])) $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
+    $item = GetArgs($Eresus->db->fields($this->table['name']));
+    $section = arg('section');
+    if ($section && $section != 'all')
+    {
+    	$item['section'] = '|' . implode('|', $section) . '|';
+    }
+    else
+    {
+    	$item['section'] = '|all|';
+    }
+
     $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
-    $db->insert($this->table['name'], $item);
-    sendNotify('Добавлен блок: '.$item['caption']);
+    $Eresus->db->insert($this->table['name'], $item);
     HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
 
   /**
    * ???
-   * @return unknown_type
+   * @return void
    */
   public function update()
   {
-  global $db, $request;
+  	global $Eresus, $request;
 
-    $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
+    $item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
     $item = GetArgs($item);
-    $item['section'] = ($item['section'] != 'all')?':'.implode(':', $request['arg']['section']).':':'all';
+    $section = arg('section');
+    if ($section && $section != 'all')
+    {
+    	$item['section'] = '|' . implode('|', $section) . '|';
+    }
+    else
+    {
+    	$item['section'] = '|all|';
+    }
     $item['content'] = arg('content', 'dbsafe');
-    $db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
-    $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['update']."'");
-    sendNotify('Изменен блок: '.$item['caption']);
+    $Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     HTTP::redirect($request['arg']['submitURL']);
   }
   //-----------------------------------------------------------------------------
 
   /**
-   * ???
-   * @return unknown_type
+   * Возвращает диалог добавления блока
+   *
+   * @return string  HTML
    */
   public function create()
   {
-  global $page, $db;
+  	global $page;
 
     $sections = array(array(), array());
     $sections = $this->menuBranch();
@@ -217,7 +245,7 @@ class TBlocks extends TListContentPlugin
         array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%', 'maxlength' => '255', 'pattern'=>'/.+/', 'errormsg'=>'Заголовок не может быть пустым!'),
         array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,'items'=>$sections[0], 'values'=>$sections[1]),
         array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px', 'comment' => 'Большие значения - больший приоритет', 'value'=>0, 'pattern'=>'/\d+/', 'errormsg'=>'Приоритет задается только цифрами!'),
-        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31),
+        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31, 'pattern'=>'/.+/', 'errormsg'=>'Имя блока не может быть пустым!'),
         array ('type' => 'select', 'name' => 'target', 'label' => 'Область', 'items' => array('Отрисованная страница','Шаблон страницы'), 'values' => array('page','template')),
         array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
       ),
@@ -235,10 +263,10 @@ class TBlocks extends TListContentPlugin
    */
   public function edit()
   {
-  global $page, $db, $request;
+  global $page, $Eresus, $request;
 
-    $item = $db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
-    $item['section'] = explode(':', $item['section']);
+    $item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
+    $item['section'] = explode('|', $item['section']);
     $sections = array(array(), array());
     $sections = $this->menuBranch();
     array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
@@ -252,7 +280,7 @@ class TBlocks extends TListContentPlugin
         array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%', 'maxlength' => '255', 'pattern'=>'/.+/', 'errormsg'=>'Заголовок не может быть пустым!'),
         array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,'items'=>$sections[0], 'values'=>$sections[1]),
         array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px', 'comment' => 'Большие значения - больший приоритет', 'default'=>0, 'pattern'=>'/\d+/', 'errormsg'=>'Приоритет задается только цифрами!'),
-        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31),
+        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31, 'pattern'=>'/.+/', 'errormsg'=>'Имя блока не может быть пустым!'),
         array ('type' => 'select', 'name' => 'target', 'label' => 'Область', 'items' => array('Отрисованная страница','Шаблон страницы'), 'values' => array('page','template')),
         array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
         array ('type' => 'checkbox', 'name' => 'active', 'label' => 'Активировать'),
@@ -271,49 +299,102 @@ class TBlocks extends TListContentPlugin
    */
   public function adminRender()
   {
-  global $db, $page, $user, $request, $session;
+  	global $Eresus, $page, $user, $request, $session;
 
     $result = '';
-    if (isset($request['arg']['id'])) {
-      $item = $db->selectItem($this->table['name'], "`".$this->table['key']."` = '".$request['arg']['id']."'");
-      $page->title .= empty($item['caption'])?'':' - '.$item['caption'];
+    if (arg('id'))
+    {
+      $item = $Eresus->db->selectItem($this->table['name'],
+      	"`" . $this->table['key'] . "` = '" . arg('id', 'int') . "'");
+      $page->title .= empty($item['caption']) ? '' : ' - ' . $item['caption'];
     }
-    if (isset($request['arg']['update']) && isset($this->table['controls']['edit'])) {
-      if (method_exists($this, 'update')) $result = $this->update(); else $session['errorMessage'] = sprintf(errMethodNotFound, 'update', get_class($this));
-    } elseif (isset($request['arg']['toggle']) && isset($this->table['controls']['toggle'])) {
-      if (method_exists($this, 'toggle')) $result = $this->toggle($request['arg']['toggle']); else $session['errorMessage'] = sprintf(errMethodNotFound, 'toggle', get_class($this));
-    } elseif (isset($request['arg']['delete']) && isset($this->table['controls']['delete'])) {
-      if (method_exists($this, 'delete')) $result = $this->delete($request['arg']['delete']); else $session['errorMessage'] = sprintf(errMethodNotFound, 'delete', get_class($this));
-    } elseif (isset($request['arg']['id']) && isset($this->table['controls']['edit'])) {
-      if (method_exists($this, 'edit')) $result = $this->edit(); else $session['errorMessage'] = sprintf(errMethodNotFound, 'edit', get_class($this));
-    } elseif (isset($request['arg']['action'])) switch ($request['arg']['action']) {
-      case 'create': $result = $this->create(); break;
-      case 'insert':
-        if (method_exists($this, 'insert')) $result = $this->insert();
-        else $session['errorMessage'] = sprintf(errMethodNotFound, 'insert', get_class($this));
-      break;
-    } else {
-      $result = $page->renderTable($this->table);
+    if (arg('update'))
+    {
+      $result = $this->update();
+    }
+    elseif (arg('toggle'))
+    {
+      $result = $this->toggle(arg('toggle', 'int'));
+    }
+    elseif (arg('delete'))
+    {
+      $result = $this->delete(arg('delete', 'int'));
+    }
+    elseif (arg('id'))
+    {
+      $result = $this->edit();
+    }
+    else
+    {
+    	switch (arg('action'))
+    	{
+    		case 'create':
+    			$result = $this->create();
+    		break;
+
+    		case 'insert':
+    			$result = $this->insert();
+    		break;
+
+    		default:
+    			$result = $page->renderTable($this->table);
+    		break;
+    	}
     }
     return $result;
   }
   //-----------------------------------------------------------------------------
 
   /**
-   * ???
-   * @param $source
-   * @param $target
-   * @return unknown_type
+   * Подставляет блоки в текст
+   *
+   * @param string $source  Исходный текст
+   * @param string $target  "page" или "template"
+   *
+   * @return string  Обработанный текст
    */
-  public function renderBlocks($source, $target)
+  private function renderBlocks($source, $target)
   {
-    global $db, $page, $request;
+    global $Eresus, $page, $request;
+
+    // Эта переменная будет заполнена позднее в цикле
+    $blockName = null;
+
+    $q = DB::getHandler()->createSelectQuery();
+    $e = $q->expr;
+    $q->select('*')
+    	->from($this->__table(''))
+    	->where(
+    		$e->lAnd(
+    			$e->eq('active', $q->bindValue(true)),
+    			$e->lOr(
+    				$e->like('section', $q->bindValue('%|all|%')),
+    				$e->like('section', $q->bindValue('%|' . $page->id . '|%'))
+    			),
+    			$e->eq('block', $q->bindParam($blockName)),
+    			$e->eq('target', $q->bindValue($target))
+    		)
+    	)
+    	->orderBy('priority', ezcQuerySelect::DESC);
 
     preg_match_all('/\$\(Blocks:([^\)]+)\)/', $source, $blocks);
-    foreach($blocks[1] as $block) {
-      $sql = "(`active`=1) AND (`section` LIKE '%:".$page->id.":%' OR `section` = ':all:') AND (`block`='".$block."') AND (`target` = '".$target."')";
-      $item = $db->select($this->name, $sql, '`priority`', true);
-      if (count($item)) $source = str_replace('$(Blocks:'.$block.')', trim($item[0]['content']), $source);
+    foreach ($blocks[1] as $block)
+    {
+      $blockName = $block;
+      try
+      {
+      	$item = DB::fetch($q);
+      }
+      catch (DBQueryException $e)
+      {
+      	Core::logException($e);
+      	$item = null;
+      }
+
+      if ($item)
+      {
+      	$source = str_replace('$(Blocks:'.$block.')', trim($item['content']), $source);
+      }
     }
     return $source;
   }
@@ -345,9 +426,10 @@ class TBlocks extends TListContentPlugin
   //-----------------------------------------------------------------------------
 
   /**
-   * ???
-   * @param $text
-   * @return unknown_type
+   * Подставляет блоки в отрисованную страницу
+   *
+   * @param string $text  Содержимое страницы
+   * @return string
    */
   public function clientOnPageRender($text)
   {
@@ -355,4 +437,102 @@ class TBlocks extends TListContentPlugin
     return $text;
   }
   //-----------------------------------------------------------------------------
+
+	private function adminRenderContent()
+	{
+	global $Eresus, $page;
+
+		$result = '';
+		if (!is_null(arg('id')))
+		{
+			$item = $Eresus->db->selectItem($this->table['name'], "`".$this->table['key']."` = '".arg('id', 'dbsafe')."'");
+			$page->title .= empty($item['caption'])?'':' - '.$item['caption'];
+		}
+		switch (true) {
+			case !is_null(arg('update')) && isset($this->table['controls']['edit']):
+				if (method_exists($this, 'update')) $result = $this->update(); else ErrorMessage(sprintf(errMethodNotFound, 'update', get_class($this)));
+			break;
+			case !is_null(arg('toggle')) && isset($this->table['controls']['toggle']):
+				if (method_exists($this, 'toggle')) $result = $this->toggle(arg('toggle', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'toggle', get_class($this)));
+			break;
+			case !is_null(arg('delete')) && isset($this->table['controls']['delete']):
+				if (method_exists($this, 'delete')) $result = $this->delete(arg('delete', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'delete', get_class($this)));
+			break;
+			case !is_null(arg('up')) && isset($this->table['controls']['position']):
+				if (method_exists($this, 'up')) $result = $this->table['sortDesc']?$this->down(arg('up', 'dbsafe')):$this->up(arg('up', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'up', get_class($this)));
+			break;
+			case !is_null(arg('down')) && isset($this->table['controls']['position']):
+				if (method_exists($this, 'down')) $result = $this->table['sortDesc']?$this->up(arg('down', 'dbsafe')):$this->down(arg('down', 'dbsafe')); else ErrorMessage(sprintf(errMethodNotFound, 'down', get_class($this)));
+			break;
+			case !is_null(arg('id')) && isset($this->table['controls']['edit']):
+				if (method_exists($this, 'adminEditItem')) $result = $this->adminEditItem(); else ErrorMessage(sprintf(errMethodNotFound, 'adminEditItem', get_class($this)));
+			break;
+			case !is_null(arg('action')):
+				switch (arg('action')) {
+					case 'create': if (isset($this->table['controls']['edit']))
+						if (method_exists($this, 'adminAddItem')) $result = $this->adminAddItem();
+						else ErrorMessage(sprintf(errMethodNotFound, 'adminAddItem', get_class($this)));
+					break;
+					case 'insert':
+						if (method_exists($this, 'insert')) $result = $this->insert();
+						else ErrorMessage(sprintf(errMethodNotFound, 'insert', get_class($this)));
+					break;
+				}
+			break;
+			default:
+				if (!is_null(arg('section'))) $this->table['condition'] = "`section`='".arg('section', 'int')."'";
+				$result = $page->renderTable($this->table);
+		}
+		return $result;
+	}
+
+	function install()
+	{
+		$this->createTable($this->table);
+		parent::install();
+	}
+
+	function uninstall()
+	{
+		parent::uninstall();
+	}
+
+	function createTable($table)
+	{
+		global $Eresus;
+
+		$Eresus->db->query('CREATE TABLE IF NOT EXISTS `'.$Eresus->db->prefix.$table['name'].'`'.$table['sql']);
+	}
+
+	//-----------------------------------------------------------------------------
+	private function toggle($id)
+	{
+		global $page;
+
+		$q = DB::getHandler()->createUpdateQuery();
+		$e = $q->expr;
+		$q->update($this->table['name'])
+			->set('active', $e->not('active'))
+			->where($e->eq('id', $id));
+		DB::execute($q);
+
+		HTTP::redirect(str_replace('&amp;', '&', $page->url()));
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Удаление
+	 *
+	 * Перенесено из TListContentPlugin
+	 *
+	 * @param int $id
+	 */
+	private function delete($id)
+	{
+		global $page;
+
+		$this->dbDelete('', $id);
+		HTTP::goback();
+	}
+	//-----------------------------------------------------------------------------
 }
