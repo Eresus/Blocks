@@ -180,7 +180,13 @@ class Blocks extends Plugin
   {
   	global $Eresus, $request;
 
-    $item = GetArgs($Eresus->db->fields($this->table['name']));
+  	$item = array();
+    $item['caption'] = arg('caption', 'dbsafe');
+    $item['priority'] = arg('priority', 'int');
+    $item['block'] = arg('block', 'dbsafe');
+    $item['target'] = arg('target', 'dbsafe');
+    $item['content'] = arg('content', 'dbsafe');
+
     $section = arg('section');
     if ($section && $section != 'all')
     {
@@ -191,7 +197,6 @@ class Blocks extends Plugin
     	$item['section'] = '|all|';
     }
 
-    $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
     $Eresus->db->insert($this->table['name'], $item);
     HTTP::redirect($request['arg']['submitURL']);
@@ -207,7 +212,13 @@ class Blocks extends Plugin
   	global $Eresus, $request;
 
     $item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
-    $item = GetArgs($item);
+
+    $item['caption'] = arg('caption', 'dbsafe');
+    $item['priority'] = arg('priority', 'int');
+    $item['block'] = arg('block', 'dbsafe');
+    $item['target'] = arg('target', 'dbsafe');
+    $item['content'] = arg('content', 'dbsafe');
+
     $section = arg('section');
     if ($section && $section != 'all')
     {
@@ -217,7 +228,7 @@ class Blocks extends Plugin
     {
     	$item['section'] = '|all|';
     }
-    $item['content'] = arg('content', 'dbsafe');
+
     $Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     HTTP::redirect($request['arg']['submitURL']);
   }
