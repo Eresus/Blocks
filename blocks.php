@@ -4,7 +4,7 @@
  *
  * Управление текстовыми блоками
  *
- * @version 3.00
+ * @version 3.01
  *
  * @copyright 2005, ProCreat Systems, http://procreat.ru/
  * @copyright 2007, Eresus Group, http://eresus.ru/
@@ -59,7 +59,7 @@ class Blocks extends Plugin
    * Версия плагина
    * @var string
    */
-  public $version = '3.00a';
+  public $version = '3.01a';
 
   /**
    * Описание плагина
