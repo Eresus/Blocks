@@ -4,7 +4,7 @@
  *
  * Управление текстовыми блоками
  *
- * @version 3.00
+ * @version 3.01
  *
  * @copyright 2005, ProCreat Systems, http://procreat.ru/
  * @copyright 2007, Eresus Group, http://eresus.ru/
@@ -59,7 +59,7 @@ class Blocks extends Plugin
    * Версия плагина
    * @var string
    */
-  public $version = '3.00';
+  public $version = '3.01';
 
   /**
    * Описание плагина
@@ -180,7 +180,13 @@ class Blocks extends Plugin
   {
   	global $Eresus, $request;
 
-    $item = GetArgs($Eresus->db->fields($this->table['name']));
+  	$item = array();
+    $item['caption'] = arg('caption', 'dbsafe');
+    $item['priority'] = arg('priority', 'int');
+    $item['block'] = arg('block', 'dbsafe');
+    $item['target'] = arg('target', 'dbsafe');
+    $item['content'] = arg('content', 'dbsafe');
+
     $section = arg('section');
     if ($section && $section != 'all')
     {
@@ -191,7 +197,6 @@ class Blocks extends Plugin
     	$item['section'] = '|all|';
     }
 
-    $item['content'] = arg('content', 'dbsafe');
     $item['active'] = true;
     $Eresus->db->insert($this->table['name'], $item);
     HTTP::redirect($request['arg']['submitURL']);
@@ -207,7 +212,13 @@ class Blocks extends Plugin
   	global $Eresus, $request;
 
     $item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
-    $item = GetArgs($item);
+
+    $item['caption'] = arg('caption', 'dbsafe');
+    $item['priority'] = arg('priority', 'int');
+    $item['block'] = arg('block', 'dbsafe');
+    $item['target'] = arg('target', 'dbsafe');
+    $item['content'] = arg('content', 'dbsafe');
+
     $section = arg('section');
     if ($section && $section != 'all')
     {
@@ -217,7 +228,7 @@ class Blocks extends Plugin
     {
     	$item['section'] = '|all|';
     }
-    $item['content'] = arg('content', 'dbsafe');
+
     $Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
     HTTP::redirect($request['arg']['submitURL']);
   }
@@ -242,11 +253,19 @@ class Blocks extends Plugin
       'width' => '95%',
       'fields' => array (
         array ('type'=>'hidden','name'=>'action', 'value'=>'insert'),
-        array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%', 'maxlength' => '255', 'pattern'=>'/.+/', 'errormsg'=>'Заголовок не может быть пустым!'),
-        array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,'items'=>$sections[0], 'values'=>$sections[1]),
-        array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px', 'comment' => 'Большие значения - больший приоритет', 'value'=>0, 'pattern'=>'/\d+/', 'errormsg'=>'Приоритет задается только цифрами!'),
-        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31, 'pattern'=>'/.+/', 'errormsg'=>'Имя блока не может быть пустым!'),
-        array ('type' => 'select', 'name' => 'target', 'label' => 'Область', 'items' => array('Отрисованная страница','Шаблон страницы'), 'values' => array('page','template')),
+        array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
+        	'maxlength' => '255', 'pattern'=>'/\S+/', 'errormsg'=>'Заголовок не может быть пустым!'),
+        array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
+        	'items'=>$sections[0], 'values'=>$sections[1]),
+        array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
+        	'comment' => 'Большие значения - больший приоритет', 'value'=>0,
+        	'pattern'=>'/^\d+$/', 'errormsg'=>'Приоритет задается только цифрами!'),
+        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px',
+        	'maxlength' => 31, 'pattern'=>'/^\S+$/',
+        	'errormsg'=>'Имя блока не может быть пустым или содержать пробелы!'),
+        array ('type' => 'select', 'name' => 'target', 'label' => 'Область',
+        	'items' => array('Отрисованная страница','Шаблон страницы'),
+        	'values' => array('page','template')),
         array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
       ),
       'buttons' => array('ok', 'cancel'),
@@ -277,11 +296,20 @@ class Blocks extends Plugin
       'width' => '95%',
       'fields' => array (
         array ('type' => 'hidden','name'=>'update', 'value'=>$item['id']),
-        array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%', 'maxlength' => '255', 'pattern'=>'/.+/', 'errormsg'=>'Заголовок не может быть пустым!'),
-        array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,'items'=>$sections[0], 'values'=>$sections[1]),
-        array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px', 'comment' => 'Большие значения - больший приоритет', 'default'=>0, 'pattern'=>'/\d+/', 'errormsg'=>'Приоритет задается только цифрами!'),
-        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px', 'maxlength' => 31, 'pattern'=>'/.+/', 'errormsg'=>'Имя блока не может быть пустым!'),
-        array ('type' => 'select', 'name' => 'target', 'label' => 'Область', 'items' => array('Отрисованная страница','Шаблон страницы'), 'values' => array('page','template')),
+        array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
+        	'maxlength' => '255', 'pattern'=>'/\S+/',
+        	'errormsg'=>'Заголовок не может быть пустым!'),
+        array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
+        	'items'=>$sections[0], 'values'=>$sections[1]),
+        array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
+        	'comment' => 'Большие значения - больший приоритет', 'default'=>0,
+        	'pattern'=>'/^\d+$/', 'errormsg'=>'Приоритет задается только цифрами!'),
+        array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px',
+        	'maxlength' => 31, 'pattern'=>'/^\S+$/',
+        	'errormsg'=>'Имя блока не может быть пустым или содержать пробелы!'),
+        array ('type' => 'select', 'name' => 'target', 'label' => 'Область',
+        	'items' => array('Отрисованная страница','Шаблон страницы'),
+        	'values' => array('page','template')),
         array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
         array ('type' => 'checkbox', 'name' => 'active', 'label' => 'Активировать'),
       ),
