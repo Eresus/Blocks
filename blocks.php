@@ -4,7 +4,7 @@
  *
  * Управление текстовыми блоками
  *
- * @version 3.01
+ * @version 3.02
  *
  * @copyright 2005, ProCreat Systems, http://procreat.ru/
  * @copyright 2007, Eresus Group, http://eresus.ru/
@@ -79,6 +79,7 @@ class Blocks extends Plugin
     'columns' => array(
       array('name' => 'caption', 'caption' => 'Название'),
       array('name' => 'block', 'caption' => 'Блок', 'align'=> 'right'),
+      array('name' => 'description', 'caption' => 'Описание'),
       array('name' => 'priority', 'caption' =>
       	'<span title="Приоритет" style="cursor: default;">&nbsp;&nbsp;*</span>', 'align'=>'center'),
     ),
@@ -96,6 +97,7 @@ class Blocks extends Plugin
     'sql' => "(
       `id` int(10) unsigned NOT NULL auto_increment,
       `caption` varchar(255) default NULL,
+      `description` varchar(255) default NULL,
       `active` tinyint(1) unsigned default NULL,
       `section` varchar(255) default NULL,
       `priority` int(10) unsigned default NULL,
@@ -182,6 +184,7 @@ class Blocks extends Plugin
 
   	$item = array();
     $item['caption'] = arg('caption', 'dbsafe');
+    $item['description'] = arg('description', 'dbsafe');
     $item['priority'] = arg('priority', 'int');
     $item['block'] = arg('block', 'dbsafe');
     $item['target'] = arg('target', 'dbsafe');
@@ -214,6 +217,7 @@ class Blocks extends Plugin
     $item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
 
     $item['caption'] = arg('caption', 'dbsafe');
+    $item['description'] = arg('description', 'dbsafe');
     $item['priority'] = arg('priority', 'int');
     $item['block'] = arg('block', 'dbsafe');
     $item['target'] = arg('target', 'dbsafe');
@@ -255,6 +259,8 @@ class Blocks extends Plugin
         array ('type'=>'hidden','name'=>'action', 'value'=>'insert'),
         array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
         	'maxlength' => '255', 'pattern'=>'/\S+/', 'errormsg'=>'Заголовок не может быть пустым!'),
+        array ('type' => 'edit', 'name' => 'description', 'label' => 'Описание', 'width' => '100%',
+        	'maxlength' => '255'),
         array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
         	'items'=>$sections[0], 'values'=>$sections[1]),
         array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
@@ -299,6 +305,8 @@ class Blocks extends Plugin
         array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
         	'maxlength' => '255', 'pattern'=>'/\S+/',
         	'errormsg'=>'Заголовок не может быть пустым!'),
+        array ('type' => 'edit', 'name' => 'description', 'label' => 'Описание', 'width' => '100%',
+        	'maxlength' => '255'),
         array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
         	'items'=>$sections[0], 'values'=>$sections[1]),
         array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
