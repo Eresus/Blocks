@@ -530,12 +530,6 @@ class Blocks extends Plugin
 	}
 	//-----------------------------------------------------------------------------
 
-	function uninstall()
-	{
-		parent::uninstall();
-	}
-	//-----------------------------------------------------------------------------
-
 	private function toggle($id)
 	{
 		global $page;
