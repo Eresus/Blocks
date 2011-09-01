@@ -149,19 +149,22 @@ class Blocks extends Plugin
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * ???
-	 * @return unknown_type
+	 * Âîçâğàùàåò ğàçìåòêó èíòåğôåéñà óïğàâëåíèÿ
+	 *
+	 * @return string  HTML
 	 */
 	public function adminRender()
 	{
-		global $Eresus, $page;
+		global $page;
 
 		$result = '';
 		if (arg('id'))
 		{
-			$item = $Eresus->db->selectItem($this->table['name'],
-				"`" . $this->table['key'] . "` = '" . arg('id', 'int') . "'");
-			$page->title .= empty($item['caption']) ? '' : ' - ' . $item['caption'];
+			$item = $this->dbItem('', arg('id', 'int'));
+			if (!empty($item['caption']))
+			{
+				$page->title .= ' - ' . $item['caption'];
+			}
 		}
 		if (arg('update'))
 		{
@@ -201,13 +204,15 @@ class Blocks extends Plugin
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * ???
-	 * @param $text
-	 * @return unknown_type
+	 * Ïîäñòàâëÿåò áëîêè â øàáëîí
+	 *
+	 * @param string $text
+	 *
+	 * @return string
 	 */
 	public function clientOnContentRender($text)
 	{
-		global $page;
+		$page = $GLOBALS['page'];
 		$page->template = $this->renderBlocks($page->template, 'template');
 		return $text;
 	}
@@ -217,6 +222,7 @@ class Blocks extends Plugin
 	 * Ïîäñòàâëÿåò áëîêè â îòğèñîâàííóş ñòğàíèöó
 	 *
 	 * @param string $text	Ñîäåğæèìîå ñòğàíèöû
+	 *
 	 * @return string
 	 */
 	public function clientOnPageRender($text)
@@ -257,9 +263,9 @@ class Blocks extends Plugin
 		{
 			foreach ($items as $item)
 			{
-				$result[0][] = str_repeat('- ', $level).$item['caption'];
+				$result[0][] = str_repeat('- ', $level) . $item['caption'];
 				$result[1][] = $item['id'];
-				$sub = $this->menuBranch($item['id'], $level+1);
+				$sub = $this->menuBranch($item['id'], $level + 1);
 				if (count($sub[0]))
 				{
 					$result[0] = array_merge($result[0], $sub[0]);
@@ -278,8 +284,6 @@ class Blocks extends Plugin
 	 */
 	private function insert()
 	{
-		global $Eresus, $request;
-
 		$item = array();
 		$item['caption'] = arg('caption', 'dbsafe');
 		$item['description'] = arg('description', 'dbsafe');
@@ -299,8 +303,8 @@ class Blocks extends Plugin
 		}
 
 		$item['active'] = true;
-		$Eresus->db->insert($this->table['name'], $item);
-		HTTP::redirect($request['arg']['submitURL']);
+		$this->dbInsert('', $item);
+		HTTP::redirect(arg('submitURL'));
 	}
 	//-----------------------------------------------------------------------------
 
@@ -311,9 +315,7 @@ class Blocks extends Plugin
 	 */
 	private function update()
 	{
-		global $Eresus, $request;
-
-		$item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
+		$item = $this->dbItem('', arg('update', 'int'));
 
 		$item['caption'] = arg('caption', 'dbsafe');
 		$item['description'] = arg('description', 'dbsafe');
@@ -332,8 +334,8 @@ class Blocks extends Plugin
 			$item['section'] = '|all|';
 		}
 
-		$Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
-		HTTP::redirect($request['arg']['submitURL']);
+		$this->dbUpdate('', $item);
+		HTTP::redirect(arg('submitURL'));
 	}
 	//-----------------------------------------------------------------------------
 
@@ -344,8 +346,6 @@ class Blocks extends Plugin
 	 */
 	private function create()
 	{
-		global $page;
-
 		$sections = array(array(), array());
 		$sections = $this->menuBranch();
 		array_unshift($sections[0], 'ÂÑÅ ĞÀÇÄÅËÛ');
@@ -376,7 +376,7 @@ class Blocks extends Plugin
 			'buttons' => array('ok', 'cancel'),
 		);
 
-		$result = $page->renderForm($form);
+		$result = $GLOBALS['page']->renderForm($form);
 		return $result;
 	}
 	//-----------------------------------------------------------------------------
@@ -388,9 +388,7 @@ class Blocks extends Plugin
 	 */
 	private function edit()
 	{
-		global $page, $Eresus, $request;
-
-		$item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
+		$item = $this->dbItem('', arg('id', 'int'));
 		$item['section'] = explode('|', $item['section']);
 		$sections = array(array(), array());
 		$sections = $this->menuBranch();
@@ -424,15 +422,20 @@ class Blocks extends Plugin
 			'buttons' => array('ok', 'apply', 'cancel'),
 		);
 
-		$result = $page->renderForm($form, $item);
+		$result = $GLOBALS['page']->renderForm($form, $item);
 		return $result;
 	}
 	//-----------------------------------------------------------------------------
 
+	/**
+	 * Ïåğåêëş÷àåò àêòèâíîñòü áëîêà
+	 *
+	 * @param int $id  èäåíòèôèêàòîğ áëîêà
+	 *
+	 * @return void
+	 */
 	private function toggle($id)
 	{
-		global $page;
-
 		$q = DB::getHandler()->createUpdateQuery();
 		$e = $q->expr;
 		$q->update($this->table['name'])
@@ -440,7 +443,7 @@ class Blocks extends Plugin
 			->where($e->eq('id', $id));
 		DB::execute($q);
 
-		HTTP::redirect(str_replace('&amp;', '&', $page->url()));
+		HTTP::redirect(str_replace('&amp;', '&', $GLOBALS['page']->url()));
 	}
 	//-----------------------------------------------------------------------------
 
