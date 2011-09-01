@@ -92,23 +92,7 @@ class Blocks extends Plugin
 			'items'=>array(
 			 array('caption'=>'Добавить блок', 'name'=>'action', 'value'=>'create')
 			),
-		),
-		'sql' => "(
-			`id` int(10) unsigned NOT NULL auto_increment,
-			`caption` varchar(255) default NULL,
-			`description` varchar(255) default NULL,
-			`active` tinyint(1) unsigned default NULL,
-			`section` varchar(255) default NULL,
-			`priority` int(10) unsigned default NULL,
-			`block` varchar(31) default NULL,
-			`target` varchar(63) default NULL,
-			`content` text,
-			PRIMARY KEY	(`id`),
-			KEY `active` (`active`),
-			KEY `section` (`section`),
-			KEY `block` (`block`),
-			KEY `target` (`target`)
-		) TYPE=MyISAM COMMENT='Content blocks';",
+		)
 	);
 
 	/**
@@ -521,23 +505,34 @@ class Blocks extends Plugin
 		return $result;
 	}
 
-	function install()
+	/**
+	 * @see Plugin::install()
+	 */
+	public function install()
 	{
-		$this->createTable($this->table);
 		parent::install();
+		$this->dbCreateTable('
+			`id` int(10) unsigned NOT NULL auto_increment,
+			`caption` varchar(255) default NULL,
+			`description` varchar(255) default NULL,
+			`active` tinyint(1) unsigned default NULL,
+			`section` varchar(255) default NULL,
+			`priority` int(10) unsigned default NULL,
+			`block` varchar(31) default NULL,
+			`target` varchar(63) default NULL,
+			`content` text,
+			PRIMARY KEY	(`id`),
+			KEY `active` (`active`),
+			KEY `section` (`section`),
+			KEY `block` (`block`),
+			KEY `target` (`target`)
+		');
 	}
+	//-----------------------------------------------------------------------------
 
 	function uninstall()
 	{
 		parent::uninstall();
-	}
-
-	function createTable($table)
-	{
-		global $Eresus;
-
-		$Eresus->db->query('CREATE TABLE IF NOT EXISTS `'.$Eresus->db->prefix.$table['name'].'`'.
-			$table['sql']);
 	}
 	//-----------------------------------------------------------------------------
 
