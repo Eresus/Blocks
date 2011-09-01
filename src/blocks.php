@@ -90,7 +90,7 @@ class Blocks extends Plugin
 		'tabs' => array(
 			'width'=>'180px',
 			'items'=>array(
-			 array('caption'=>'Добавить блок', 'name'=>'action', 'value'=>'create')
+				array('caption'=>'Добавить блок', 'name'=>'action', 'value'=>'create')
 			),
 		)
 	);
@@ -108,200 +108,43 @@ class Blocks extends Plugin
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * ???
-	 * @param $owner
-	 * @param $level
-	 * @return unknown_type
+	 * @see Plugin::install()
 	 */
-	public function menuBranch($owner = 0, $level = 0)
+	public function install()
 	{
-		$result = array(array(), array());
-
-		$q = DB::getHandler()->createSelectQuery();
-		$e = $q->expr;
-		$q->select('id', 'caption')
-			->from('pages')
-			->where(
-				$e->lAnd(
-					$e->gte('access', USER),
-					$e->eq('owner', $q->bindValue($owner, null, PDO::PARAM_INT)),
-					$e->eq('active', true)
-				)
-			)
-			->orderBy('position');
-
-		$items = DB::fetchAll($q);
-
-		if (count($items))
-		{
-			foreach($items as $item)
-			{
-				$result[0][] = str_repeat('- ', $level).$item['caption'];
-				$result[1][] = $item['id'];
-				$sub = $this->menuBranch($item['id'], $level+1);
-				if (count($sub[0]))
-				{
-					$result[0] = array_merge($result[0], $sub[0]);
-					$result[1] = array_merge($result[1], $sub[1]);
-				}
-			}
-		}
-		return $result;
+		parent::install();
+		$this->dbCreateTable('
+			`id` int(10) unsigned NOT NULL auto_increment,
+			`caption` varchar(255) default NULL,
+			`description` varchar(255) default NULL,
+			`active` tinyint(1) unsigned default NULL,
+			`section` varchar(255) default NULL,
+			`priority` int(10) unsigned default NULL,
+			`block` varchar(31) default NULL,
+			`target` varchar(63) default NULL,
+			`content` text,
+			PRIMARY KEY	(`id`),
+			KEY `active` (`active`),
+			KEY `section` (`section`),
+			KEY `block` (`block`),
+			KEY `target` (`target`)
+		');
 	}
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * ???
-	 * @return void
-	 */
-	public function insert()
-	{
-		global $Eresus, $request;
-
-		$item = array();
-		$item['caption'] = arg('caption', 'dbsafe');
-		$item['description'] = arg('description', 'dbsafe');
-		$item['priority'] = arg('priority', 'int');
-		$item['block'] = arg('block', 'dbsafe');
-		$item['target'] = arg('target', 'dbsafe');
-		$item['content'] = arg('content', 'dbsafe');
-
-		$section = arg('section');
-		if ($section && $section != 'all')
-		{
-			$item['section'] = '|' . implode('|', $section) . '|';
-		}
-		else
-		{
-			$item['section'] = '|all|';
-		}
-
-		$item['active'] = true;
-		$Eresus->db->insert($this->table['name'], $item);
-		HTTP::redirect($request['arg']['submitURL']);
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * ???
-	 * @return void
-	 */
-	public function update()
-	{
-		global $Eresus, $request;
-
-		$item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
-
-		$item['caption'] = arg('caption', 'dbsafe');
-		$item['description'] = arg('description', 'dbsafe');
-		$item['priority'] = arg('priority', 'int');
-		$item['block'] = arg('block', 'dbsafe');
-		$item['target'] = arg('target', 'dbsafe');
-		$item['content'] = arg('content', 'dbsafe');
-
-		$section = arg('section');
-		if ($section && $section != 'all')
-		{
-			$item['section'] = '|' . implode('|', $section) . '|';
-		}
-		else
-		{
-			$item['section'] = '|all|';
-		}
-
-		$Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
-		HTTP::redirect($request['arg']['submitURL']);
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * Возвращает диалог добавления блока
+	 * Добавляет пункт «Блоки» в меню «Расширения»
 	 *
-	 * @return string	HTML
+	 * @return void
 	 */
-	public function create()
+	public function adminOnMenuRender()
 	{
-		global $page;
-
-		$sections = array(array(), array());
-		$sections = $this->menuBranch();
-		array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
-		array_unshift($sections[1], 'all');
-		$form = array(
-			'name' => 'formCreate',
-			'caption' => 'Добавить блок',
-			'width' => '95%',
-			'fields' => array (
-				array ('type'=>'hidden','name'=>'action', 'value'=>'insert'),
-				array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
-					'maxlength' => '255', 'pattern'=>'/\S+/', 'errormsg'=>'Заголовок не может быть пустым!'),
-				array ('type' => 'edit', 'name' => 'description', 'label' => 'Описание', 'width' => '100%',
-					'maxlength' => '255'),
-				array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
-					'items'=>$sections[0], 'values'=>$sections[1]),
-				array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
-					'comment' => 'Большие значения - больший приоритет', 'value'=>0,
-					'pattern'=>'/^\d+$/', 'errormsg'=>'Приоритет задается только цифрами!'),
-				array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px',
-					'maxlength' => 31, 'pattern'=>'/^\S+$/',
-					'errormsg'=>'Имя блока не может быть пустым или содержать пробелы!'),
-				array ('type' => 'select', 'name' => 'target', 'label' => 'Область',
-					'items' => array('Отрисованная страница','Шаблон страницы'),
-					'values' => array('page','template')),
-				array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
-			),
-			'buttons' => array('ok', 'cancel'),
-		);
-
-		$result = $page->renderForm($form);
-		return $result;
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * ???
-	 * @return unknown_type
-	 */
-	public function edit()
-	{
-	global $page, $Eresus, $request;
-
-		$item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
-		$item['section'] = explode('|', $item['section']);
-		$sections = array(array(), array());
-		$sections = $this->menuBranch();
-		array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
-		array_unshift($sections[1], 'all');
-		$form = array(
-			'name' => 'formEdit',
-			'caption' => 'Изменить блок',
-			'width' => '95%',
-			'fields' => array (
-				array ('type' => 'hidden','name'=>'update', 'value'=>$item['id']),
-				array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
-					'maxlength' => '255', 'pattern'=>'/\S+/',
-					'errormsg'=>'Заголовок не может быть пустым!'),
-				array ('type' => 'edit', 'name' => 'description', 'label' => 'Описание', 'width' => '100%',
-					'maxlength' => '255'),
-				array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
-					'items'=>$sections[0], 'values'=>$sections[1]),
-				array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
-					'comment' => 'Большие значения - больший приоритет', 'default'=>0,
-					'pattern'=>'/^\d+$/', 'errormsg'=>'Приоритет задается только цифрами!'),
-				array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px',
-					'maxlength' => 31, 'pattern'=>'/^\S+$/',
-					'errormsg'=>'Имя блока не может быть пустым или содержать пробелы!'),
-				array ('type' => 'select', 'name' => 'target', 'label' => 'Область',
-					'items' => array('Отрисованная страница','Шаблон страницы'),
-					'values' => array('page','template')),
-				array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
-				array ('type' => 'checkbox', 'name' => 'active', 'label' => 'Активировать'),
-			),
-			'buttons' => array('ok', 'apply', 'cancel'),
-		);
-
-		$result = $page->renderForm($form, $item);
-		return $result;
+		$GLOBALS['page']->addMenuItem(admExtensions, array(
+			'access' => EDITOR,
+			'link' => $this->name,
+			'caption' => $this->title,
+			'hint' => $this->description
+		));
 	}
 	//-----------------------------------------------------------------------------
 
@@ -358,6 +201,264 @@ class Blocks extends Plugin
 	//-----------------------------------------------------------------------------
 
 	/**
+	 * ???
+	 * @param $text
+	 * @return unknown_type
+	 */
+	public function clientOnContentRender($text)
+	{
+		global $page;
+		$page->template = $this->renderBlocks($page->template, 'template');
+		return $text;
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Подставляет блоки в отрисованную страницу
+	 *
+	 * @param string $text	Содержимое страницы
+	 * @return string
+	 */
+	public function clientOnPageRender($text)
+	{
+		$text = $this->renderBlocks($text, 'page');
+		return $text;
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Строит дерево разделов для диалогов добавления и изменения блока
+	 *
+	 * @param int $owner
+	 * @param int $level
+	 *
+	 * @return array
+	 */
+	private function menuBranch($owner = 0, $level = 0)
+	{
+		$result = array(array(), array());
+
+		$q = DB::getHandler()->createSelectQuery();
+		$e = $q->expr;
+		$q->select('id', 'caption')
+			->from('pages')
+			->where(
+				$e->lAnd(
+					$e->gte('access', USER),
+					$e->eq('owner', $q->bindValue($owner, null, PDO::PARAM_INT)),
+					$e->eq('active', true)
+				)
+			)
+			->orderBy('position');
+
+		$items = DB::fetchAll($q);
+
+		if (count($items))
+		{
+			foreach ($items as $item)
+			{
+				$result[0][] = str_repeat('- ', $level).$item['caption'];
+				$result[1][] = $item['id'];
+				$sub = $this->menuBranch($item['id'], $level+1);
+				if (count($sub[0]))
+				{
+					$result[0] = array_merge($result[0], $sub[0]);
+					$result[1] = array_merge($result[1], $sub[1]);
+				}
+			}
+		}
+		return $result;
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Добавляет блок в БД
+	 *
+	 * @return void
+	 */
+	private function insert()
+	{
+		global $Eresus, $request;
+
+		$item = array();
+		$item['caption'] = arg('caption', 'dbsafe');
+		$item['description'] = arg('description', 'dbsafe');
+		$item['priority'] = arg('priority', 'int');
+		$item['block'] = arg('block', 'dbsafe');
+		$item['target'] = arg('target', 'dbsafe');
+		$item['content'] = arg('content', 'dbsafe');
+
+		$section = arg('section');
+		if ($section && $section != 'all')
+		{
+			$item['section'] = '|' . implode('|', $section) . '|';
+		}
+		else
+		{
+			$item['section'] = '|all|';
+		}
+
+		$item['active'] = true;
+		$Eresus->db->insert($this->table['name'], $item);
+		HTTP::redirect($request['arg']['submitURL']);
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Изменяет блок в БД
+	 *
+	 * @return void
+	 */
+	private function update()
+	{
+		global $Eresus, $request;
+
+		$item = $Eresus->db->selectItem($this->table['name'], "`id`='".arg('update', 'int')."'");
+
+		$item['caption'] = arg('caption', 'dbsafe');
+		$item['description'] = arg('description', 'dbsafe');
+		$item['priority'] = arg('priority', 'int');
+		$item['block'] = arg('block', 'dbsafe');
+		$item['target'] = arg('target', 'dbsafe');
+		$item['content'] = arg('content', 'dbsafe');
+
+		$section = arg('section');
+		if ($section && $section != 'all')
+		{
+			$item['section'] = '|' . implode('|', $section) . '|';
+		}
+		else
+		{
+			$item['section'] = '|all|';
+		}
+
+		$Eresus->db->updateItem($this->table['name'], $item, "`id`='".$request['arg']['update']."'");
+		HTTP::redirect($request['arg']['submitURL']);
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Возвращает диалог добавления блока
+	 *
+	 * @return string	HTML
+	 */
+	private function create()
+	{
+		global $page;
+
+		$sections = array(array(), array());
+		$sections = $this->menuBranch();
+		array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
+		array_unshift($sections[1], 'all');
+		$form = array(
+			'name' => 'formCreate',
+			'caption' => 'Добавить блок',
+			'width' => '95%',
+			'fields' => array (
+				array ('type'=>'hidden','name'=>'action', 'value'=>'insert'),
+				array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
+					'maxlength' => '255', 'pattern'=>'/\S+/', 'errormsg'=>'Заголовок не может быть пустым!'),
+				array ('type' => 'edit', 'name' => 'description', 'label' => 'Описание', 'width' => '100%',
+					'maxlength' => '255'),
+				array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
+					'items'=>$sections[0], 'values'=>$sections[1]),
+				array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
+					'comment' => 'Большие значения - больший приоритет', 'value'=>0,
+					'pattern'=>'/^\d+$/', 'errormsg'=>'Приоритет задается только цифрами!'),
+				array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px',
+					'maxlength' => 31, 'pattern'=>'/^\S+$/',
+					'errormsg'=>'Имя блока не может быть пустым или содержать пробелы!'),
+				array ('type' => 'select', 'name' => 'target', 'label' => 'Область',
+					'items' => array('Отрисованная страница','Шаблон страницы'),
+					'values' => array('page','template')),
+				array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
+			),
+			'buttons' => array('ok', 'cancel'),
+		);
+
+		$result = $page->renderForm($form);
+		return $result;
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Возвращает диалог изменения блока
+	 *
+	 * @return string  HTML
+	 */
+	private function edit()
+	{
+		global $page, $Eresus, $request;
+
+		$item = $Eresus->db->selectItem($this->table['name'], "`id`='".$request['arg']['id']."'");
+		$item['section'] = explode('|', $item['section']);
+		$sections = array(array(), array());
+		$sections = $this->menuBranch();
+		array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
+		array_unshift($sections[1], 'all');
+		$form = array(
+			'name' => 'formEdit',
+			'caption' => 'Изменить блок',
+			'width' => '95%',
+			'fields' => array (
+				array ('type' => 'hidden','name'=>'update', 'value'=>$item['id']),
+				array ('type' => 'edit', 'name' => 'caption', 'label' => 'Заголовок', 'width' => '100%',
+					'maxlength' => '255', 'pattern'=>'/\S+/',
+					'errormsg'=>'Заголовок не может быть пустым!'),
+				array ('type' => 'edit', 'name' => 'description', 'label' => 'Описание', 'width' => '100%',
+					'maxlength' => '255'),
+				array ('type' => 'listbox', 'name' => 'section', 'label' => 'Разделы', 'height'=> 5,
+					'items'=>$sections[0], 'values'=>$sections[1]),
+				array ('type' => 'edit', 'name' => 'priority', 'label' => 'Приоритет', 'width' => '20px',
+					'comment' => 'Большие значения - больший приоритет', 'default'=>0,
+					'pattern'=>'/^\d+$/', 'errormsg'=>'Приоритет задается только цифрами!'),
+				array ('type' => 'edit', 'name' => 'block', 'label' => 'Блок', 'width' => '100px',
+					'maxlength' => 31, 'pattern'=>'/^\S+$/',
+					'errormsg'=>'Имя блока не может быть пустым или содержать пробелы!'),
+				array ('type' => 'select', 'name' => 'target', 'label' => 'Область',
+					'items' => array('Отрисованная страница','Шаблон страницы'),
+					'values' => array('page','template')),
+				array ('type' => 'html', 'name' => 'content', 'label' => 'Содержимое', 'height' => '300px'),
+				array ('type' => 'checkbox', 'name' => 'active', 'label' => 'Активировать'),
+			),
+			'buttons' => array('ok', 'apply', 'cancel'),
+		);
+
+		$result = $page->renderForm($form, $item);
+		return $result;
+	}
+	//-----------------------------------------------------------------------------
+
+	private function toggle($id)
+	{
+		global $page;
+
+		$q = DB::getHandler()->createUpdateQuery();
+		$e = $q->expr;
+		$q->update($this->table['name'])
+			->set('active', $e->not('active'))
+			->where($e->eq('id', $id));
+		DB::execute($q);
+
+		HTTP::redirect(str_replace('&amp;', '&', $page->url()));
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Удаление
+	 *
+	 * Перенесено из TListContentPlugin
+	 *
+	 * @param int $id
+	 */
+	private function delete($id)
+	{
+		$this->dbDelete('', $id);
+		HTTP::goback();
+	}
+	//-----------------------------------------------------------------------------
+
+	/**
 	 * Подставляет блоки в текст
 	 *
 	 * @param string $source	Исходный текст
@@ -409,102 +510,6 @@ class Blocks extends Plugin
 			}
 		}
 		return $source;
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * Добавляет пункт «Блоки» в меню «Расширения»
-	 *
-	 * @return void
-	 */
-	public function adminOnMenuRender()
-	{
-		$GLOBALS['page']->addMenuItem(admExtensions, array(
-			'access' => EDITOR,
-			'link' => $this->name,
-			'caption' => $this->title,
-			'hint' => $this->description
-		));
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * ???
-	 * @param $text
-	 * @return unknown_type
-	 */
-	public function clientOnContentRender($text)
-	{
-		global $page;
-		$page->template = $this->renderBlocks($page->template, 'template');
-		return $text;
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * Подставляет блоки в отрисованную страницу
-	 *
-	 * @param string $text	Содержимое страницы
-	 * @return string
-	 */
-	public function clientOnPageRender($text)
-	{
-		$text = $this->renderBlocks($text, 'page');
-		return $text;
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * @see Plugin::install()
-	 */
-	public function install()
-	{
-		parent::install();
-		$this->dbCreateTable('
-			`id` int(10) unsigned NOT NULL auto_increment,
-			`caption` varchar(255) default NULL,
-			`description` varchar(255) default NULL,
-			`active` tinyint(1) unsigned default NULL,
-			`section` varchar(255) default NULL,
-			`priority` int(10) unsigned default NULL,
-			`block` varchar(31) default NULL,
-			`target` varchar(63) default NULL,
-			`content` text,
-			PRIMARY KEY	(`id`),
-			KEY `active` (`active`),
-			KEY `section` (`section`),
-			KEY `block` (`block`),
-			KEY `target` (`target`)
-		');
-	}
-	//-----------------------------------------------------------------------------
-
-	private function toggle($id)
-	{
-		global $page;
-
-		$q = DB::getHandler()->createUpdateQuery();
-		$e = $q->expr;
-		$q->update($this->table['name'])
-			->set('active', $e->not('active'))
-			->where($e->eq('id', $id));
-		DB::execute($q);
-
-		HTTP::redirect(str_replace('&amp;', '&', $page->url()));
-	}
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * Удаление
-	 *
-	 * Перенесено из TListContentPlugin
-	 *
-	 * @param int $id
-	 */
-	private function delete($id)
-	{
-		$this->dbDelete('', $id);
-		HTTP::goback();
 	}
 	//-----------------------------------------------------------------------------
 }
