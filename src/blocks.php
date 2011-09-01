@@ -413,14 +413,18 @@ class Blocks extends Plugin
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * ???
-	 * @return unknown_type
+	 * Добавляет пункт «Блоки» в меню «Расширения»
+	 *
+	 * @return void
 	 */
 	public function adminOnMenuRender()
 	{
-		global $page;
-
-		$page->addMenuItem(admExtensions, array ('access'	=> EDITOR, 'link'	=> $this->name, 'caption'	=> $this->title, 'hint'	=> $this->description));
+		$GLOBALS['page']->addMenuItem(admExtensions, array(
+			'access' => EDITOR,
+			'link' => $this->name,
+			'caption' => $this->title,
+			'hint' => $this->description
+		));
 	}
 	//-----------------------------------------------------------------------------
 
