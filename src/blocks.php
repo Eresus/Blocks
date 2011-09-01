@@ -103,14 +103,7 @@ class Blocks extends Plugin
 	public function __construct()
 	{
 		parent::__construct();
-		if (defined('CLIENTUI'))
-		{
-			$this->listenEvents('clientOnContentRender', 'clientOnPageRender');
-		}
-		else
-		{
-			$this->listenEvents('adminOnMenuRender');
-		}
+		$this->listenEvents('adminOnMenuRender', 'clientOnContentRender', 'clientOnPageRender');
 	}
 	//-----------------------------------------------------------------------------
 
