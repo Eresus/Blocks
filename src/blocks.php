@@ -58,7 +58,7 @@ class Blocks extends Plugin
 	 * Версия плагина
 	 * @var string
 	 */
-	public $version = '3.02b';
+	public $version = '3.02';
 
 	/**
 	 * Описание плагина
