@@ -139,7 +139,9 @@ class Blocks extends Plugin
 	 */
 	public function adminOnMenuRender()
 	{
-		$GLOBALS['page']->addMenuItem(admExtensions, array(
+		/** @var TAdminUI $page */
+		$page = Eresus_Kernel::app()->getPage();
+		$page->addMenuItem(admExtensions, array(
 			'access' => EDITOR,
 			'link' => $this->name,
 			'caption' => $this->title,
@@ -156,7 +158,7 @@ class Blocks extends Plugin
 	public function adminRender()
 	{
 		/** @var TAdminUI $page */
-		global $page;
+		$page = Eresus_Kernel::app()->getPage();
 
 		$result = '';
 		if (arg('id'))
@@ -213,7 +215,8 @@ class Blocks extends Plugin
 	 */
 	public function clientOnContentRender($text)
 	{
-		$page = $GLOBALS['page'];
+		/** @var TClientUI $page */
+		$page = Eresus_Kernel::app()->getPage();
 		$page->template = $this->renderBlocks($page->template, 'template');
 		return $text;
 	}
@@ -376,7 +379,9 @@ class Blocks extends Plugin
 			'buttons' => array('ok', 'cancel'),
 		);
 
-		$result = $GLOBALS['page']->renderForm($form);
+		/** @var TAdminUI $page */
+		$page = Eresus_Kernel::app()->getPage();
+		$result = $page->renderForm($form);
 		return $result;
 	}
 	//-----------------------------------------------------------------------------
@@ -421,7 +426,9 @@ class Blocks extends Plugin
 			'buttons' => array('ok', 'apply', 'cancel'),
 		);
 
-		$result = $GLOBALS['page']->renderForm($form, $item);
+		/** @var TAdminUI $page */
+		$page = Eresus_Kernel::app()->getPage();
+		$result = $page->renderForm($form, $item);
 		return $result;
 	}
 	//-----------------------------------------------------------------------------
@@ -442,7 +449,9 @@ class Blocks extends Plugin
 			->where($e->eq('id', $id));
 		DB::execute($q);
 
-		HTTP::redirect(str_replace('&amp;', '&', $GLOBALS['page']->url()));
+		/** @var TAdminUI $page */
+		$page = Eresus_Kernel::app()->getPage();
+		HTTP::redirect(str_replace('&amp;', '&', $page->url()));
 	}
 	//-----------------------------------------------------------------------------
 
@@ -470,7 +479,8 @@ class Blocks extends Plugin
 	 */
 	private function renderBlocks($source, $target)
 	{
-		global $page;
+		/** @var TAdminUI $page */
+		$page = Eresus_Kernel::app()->getPage();
 
 		// Эта переменная будет заполнена позднее в цикле
 		$blockName = null;
