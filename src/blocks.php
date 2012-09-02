@@ -4,7 +4,7 @@
  *
  * Управление текстовыми блоками
  *
- * @version 3.02
+ * @version 4.00
  *
  * @copyright 2005, ProCreat Systems, http://procreat.ru/
  * @copyright 2007, Eresus Group, http://eresus.ru/
@@ -40,7 +40,7 @@ class Blocks extends Plugin
 	 * Требуемая версия ядра
 	 * @var string
 	 */
-	public $kernel = '2.12';
+	public $kernel = '3.00a';
 
 	/**
 	 * Название плагина
@@ -58,7 +58,7 @@ class Blocks extends Plugin
 	 * Версия плагина
 	 * @var string
 	 */
-	public $version = '3.02';
+	public $version = '4.00a';
 
 	/**
 	 * Описание плагина
@@ -155,6 +155,7 @@ class Blocks extends Plugin
 	 */
 	public function adminRender()
 	{
+		/** @var TAdminUI $page */
 		global $page;
 
 		$result = '';
@@ -168,15 +169,15 @@ class Blocks extends Plugin
 		}
 		if (arg('update'))
 		{
-			$result = $this->update();
+			$this->update();
 		}
 		elseif (arg('toggle'))
 		{
-			$result = $this->toggle(arg('toggle', 'int'));
+			$this->toggle(arg('toggle', 'int'));
 		}
 		elseif (arg('delete'))
 		{
-			$result = $this->delete(arg('delete', 'int'));
+			$this->delete(arg('delete', 'int'));
 		}
 		elseif (arg('id'))
 		{
@@ -191,7 +192,7 @@ class Blocks extends Plugin
 				break;
 
 				case 'insert':
-					$result = $this->insert();
+					$this->insert();
 				break;
 
 				default:
@@ -346,7 +347,6 @@ class Blocks extends Plugin
 	 */
 	private function create()
 	{
-		$sections = array(array(), array());
 		$sections = $this->menuBranch();
 		array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
 		array_unshift($sections[1], 'all');
@@ -390,7 +390,6 @@ class Blocks extends Plugin
 	{
 		$item = $this->dbItem('', arg('id', 'int'));
 		$item['section'] = explode('|', $item['section']);
-		$sections = array(array(), array());
 		$sections = $this->menuBranch();
 		array_unshift($sections[0], 'ВСЕ РАЗДЕЛЫ');
 		array_unshift($sections[1], 'all');
@@ -496,7 +495,6 @@ class Blocks extends Plugin
 		preg_match_all('/\$\(Blocks:([^\)]+)\)/', $source, $blocks);
 		foreach ($blocks[1] as $block)
 		{
-			$blockName = $block;
 			try
 			{
 				$item = DB::fetch($q);
