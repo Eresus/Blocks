@@ -327,6 +327,7 @@ class Blocks extends Plugin
 		$item['block'] = arg('block', 'dbsafe');
 		$item['target'] = arg('target', 'dbsafe');
 		$item['content'] = arg('content', 'dbsafe');
+		$item['active'] = arg('active', 'int');
 
 		$section = arg('section');
 		if ($section && $section != 'all')
