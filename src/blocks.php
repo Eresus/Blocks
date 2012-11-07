@@ -504,7 +504,7 @@ class Blocks extends Plugin
 			->orderBy('priority', ezcQuerySelect::DESC);
 
 		preg_match_all('/\$\(Blocks:([^\)]+)\)/', $source, $blocks);
-		foreach ($blocks[1] as $block)
+		foreach ($blocks[1] as $blockName)
 		{
 			try
 			{
@@ -518,7 +518,7 @@ class Blocks extends Plugin
 
 			if ($item)
 			{
-				$source = str_replace('$(Blocks:'.$block.')', trim($item['content']), $source);
+				$source = str_replace('$(Blocks:'.$blockName.')', trim($item['content']), $source);
 			}
 		}
 		return $source;
