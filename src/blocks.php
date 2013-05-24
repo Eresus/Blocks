@@ -46,12 +46,6 @@ class Blocks extends Plugin
     public $title = 'Блоки';
 
     /**
-     * Тип плагина
-     * @var string
-     */
-    public $type = 'client,admin';
-
-    /**
      * Версия плагина
      * @var string
      */
@@ -77,7 +71,8 @@ class Blocks extends Plugin
             array('name' => 'block', 'caption' => 'Блок', 'align'=> 'right'),
             array('name' => 'description', 'caption' => 'Описание'),
             array('name' => 'priority', 'caption' =>
-            '<span title="Приоритет" style="cursor: default;">&nbsp;&nbsp;*</span>', 'align'=>'center'),
+                '<span title="Приоритет" style="cursor: default;">&nbsp;&nbsp;*</span>',
+                'align'=>'center'),
         ),
         'controls' => array (
             'delete' => '',
