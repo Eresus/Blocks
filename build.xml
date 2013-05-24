@@ -113,7 +113,7 @@
             </else>
         </if>
 
-        <phpcodesniffer standard="PSR2DS" haltonerror="false" >
+        <phpcodesniffer standard="PSR2DS" haltonerror="false" encoding="UTF-8">
             <formatter
                 type="${phpcs.format}"
                 outfile="${logs.dir}/phpcs.${phpcs.file.extension}"
