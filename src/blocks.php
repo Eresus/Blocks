@@ -95,6 +95,20 @@ class Blocks extends Plugin
     private $blocksTable = null;
 
     /**
+     * Текущий уровень рекурсии
+     * @var int
+     * @since 4.01
+     */
+    private $recursion = 0;
+
+    /**
+     * Предел рекурсивной обработки блоков
+     * @var int
+     * @since 4.01
+     */
+    private $recursionLimit = 10;
+
+    /**
      * Конструктор
      *
      * @return Blocks
@@ -464,20 +478,28 @@ class Blocks extends Plugin
      */
     private function renderBlocks($html, $target)
     {
-        /** @var TAdminUI $page */
-        $page = Eresus_Kernel::app()->getPage();
+        $this->recursion++;
 
-        $table = $this->getTable();
-
-        preg_match_all('/\$\(Blocks:([^\)]+)\)/', $html, $blocks);
-        foreach ($blocks[1] as $blockName)
+        if ($this->recursion <= $this->recursionLimit)
         {
-            $block = $table->getAppropriateBlock($blockName, $page->id, $target);
-            if (null !== $block)
+            /** @var TAdminUI $page */
+            $page = Eresus_Kernel::app()->getPage();
+
+            $table = $this->getTable();
+
+            preg_match_all('/\$\(Blocks:([^\)]+)\)/', $html, $blocks);
+            foreach ($blocks[1] as $blockName)
             {
-                $html = str_replace('$(Blocks:'.$blockName.')', trim($block['content']), $html);
+                $block = $table->getAppropriateBlock($blockName, $page->id, $target);
+                if (null !== $block)
+                {
+                    $replace = $this->renderBlocks(trim($block['content']), $target);
+                    $html = str_replace('$(Blocks:'.$blockName.')', $replace, $html);
+                }
             }
         }
+
+        $this->recursion--;
         return $html;
     }
 
