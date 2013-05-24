@@ -88,6 +88,13 @@ class Blocks extends Plugin
     );
 
     /**
+     * Таблица блоков
+     * @var null|Blocks_Entity_Table_Block
+     * @since 4.01
+     */
+    private $blocksTable = null;
+
+    /**
      * Конструктор
      *
      * @return Blocks
@@ -460,40 +467,32 @@ class Blocks extends Plugin
         /** @var TAdminUI $page */
         $page = Eresus_Kernel::app()->getPage();
 
-        // Эта переменная будет заполнена позднее в цикле
-        $blockName = null;
-
-        $q = DB::getHandler()->createSelectQuery();
-        $e = $q->expr;
-        $q->select('*')
-            ->from($this->__table(''))
-            ->where(
-                $e->lAnd(
-                    $e->eq('active', $q->bindValue(true)),
-                    $e->lOr(
-                        $e->like('section', $q->bindValue('%|all|%')),
-                        $e->like('section', $q->bindValue('%|' . $page->id . '|%'))
-                    ),
-                    $e->eq('block', $q->bindParam($blockName)),
-                    $e->eq('target', $q->bindValue($target))
-                )
-            )
-            ->orderBy('priority', ezcQuerySelect::DESC);
+        $table = $this->getTable();
 
         preg_match_all('/\$\(Blocks:([^\)]+)\)/', $html, $blocks);
         foreach ($blocks[1] as $blockName)
         {
-            try
+            $block = $table->getAppropriateBlock($blockName, $page->id, $target);
+            if (null !== $block)
             {
-                $item = DB::fetch($q);
-                $html = str_replace('$(Blocks:'.$blockName.')', trim($item['content']), $html);
-            }
-            catch (DBQueryException $e)
-            {
-                Core::logException($e);
+                $html = str_replace('$(Blocks:'.$blockName.')', trim($block['content']), $html);
             }
         }
         return $html;
+    }
+
+    /**
+     * Возвращает таблицу блоков
+     * @return Blocks_Entity_Table_Block
+     * @since 4.01
+     */
+    private function getTable()
+    {
+        if (null === $this->blocksTable)
+        {
+            $this->blocksTable = new Blocks_Entity_Table_Block($this);
+        }
+        return $this->blocksTable;
     }
 }
 
