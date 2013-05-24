@@ -43,6 +43,20 @@ class Blocks_Entity_Table_Block
     private $plugin;
 
     /**
+     * Кэш запроса к БД
+     * @var array
+     * @since 4.01
+     */
+    private $query = null;
+
+    /**
+     * Кэш параметров для getAppropriateBlock
+     * @var array
+     * @since 4.01
+     */
+    private $paramCache = array();
+
+    /**
      * @param Plugin $plugin
      * @since 4.01
      */
@@ -64,26 +78,37 @@ class Blocks_Entity_Table_Block
      */
     public function getAppropriateBlock($name, $sectionId, $target)
     {
-        $q = DB::getHandler()->createSelectQuery();
-        $e = $q->expr;
-        $q->select('*');
-        $q->from($this->getTableName());
-        $q->where(
+        /*
+         * Помещаем параметры в постоянное свойство, чтобы закэшированный запрос мог обращаться к
+         * ним по ссылке.
+         */
+        $this->paramCache['name'] = $name;
+        $this->paramCache['section'] = '%|' . $sectionId . '|%';
+        $this->paramCache['target'] = $target;
+
+        if (null === $this->query)
+        {
+            $this->query = DB::getHandler()->createSelectQuery();
+            $e = $this->query->expr;
+            $this->query->select('*');
+            $this->query->from($this->getTableName());
+            $this->query->where(
                 $e->lAnd(
-                    $e->eq('active', $q->bindValue(true)),
+                    $e->eq('active', $this->query->bindValue(true)),
                     $e->lOr(
-                        $e->like('section', $q->bindValue('%|all|%')),
-                        $e->like('section', $q->bindValue('%|' . $sectionId . '|%'))
+                        $e->like('section', $this->query->bindValue('%|all|%')),
+                        $e->like('section', $this->query->bindParam($this->paramCache['section']))
                     ),
-                    $e->eq('block', $q->bindParam($name)),
-                    $e->eq('target', $q->bindValue($target))
+                    $e->eq('block', $this->query->bindParam($this->paramCache['name'])),
+                    $e->eq('target', $this->query->bindParam($this->paramCache['target']))
                 )
             )
             ->orderBy('priority', ezcQuerySelect::DESC);
+        }
 
         try
         {
-            $raw = DB::fetch($q);
+            $raw = DB::fetch($this->query);
         }
         catch (DBQueryException $e)
         {
