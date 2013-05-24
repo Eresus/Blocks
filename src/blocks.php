@@ -1,6 +1,6 @@
 <?php
 /**
- * Blocks
+ * Модуль «Блоки»
  *
  * Управление текстовыми блоками
  *
@@ -9,7 +9,7 @@
  * @copyright 2005, Михаил Красильников, <m.krasilnikov@yandex.ru>
  * @copyright 2010, ООО "Два слона", http://dvaslona.ru/
  * @license http://www.gnu.org/licenses/gpl.txt	GPL License 3
- * @author Михаил Красильников <mihalych@vsepofigu.ru>
+ * @author Михаил Красильников <m.krasilnikov@yandex.ru>
  *
  * Данная программа является свободным программным обеспечением. Вы
  * вправе распространять ее и/или модифицировать в соответствии с
@@ -486,16 +486,11 @@ class Blocks extends Plugin
             try
             {
                 $item = DB::fetch($q);
+                $source = str_replace('$(Blocks:'.$blockName.')', trim($item['content']), $source);
             }
             catch (DBQueryException $e)
             {
                 Core::logException($e);
-                $item = null;
-            }
-
-            if ($item)
-            {
-                $source = str_replace('$(Blocks:'.$blockName.')', trim($item['content']), $source);
             }
         }
         return $source;
