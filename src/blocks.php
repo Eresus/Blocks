@@ -8,7 +8,7 @@
  *
  * @copyright 2005, Михаил Красильников, <m.krasilnikov@yandex.ru>
  * @copyright 2010, ООО "Два слона", http://dvaslona.ru/
- * @license http://www.gnu.org/licenses/gpl.txt	GPL License 3
+ * @license http://www.gnu.org/licenses/gpl.txt GPL License 3
  * @author Михаил Красильников <m.krasilnikov@yandex.ru>
  *
  * Данная программа является свободным программным обеспечением. Вы
@@ -105,21 +105,21 @@ class Blocks extends Plugin
     {
         parent::install();
         $this->dbCreateTable('
-			`id` int(10) unsigned NOT NULL auto_increment,
-			`caption` varchar(255) default NULL,
-			`description` varchar(255) default NULL,
-			`active` tinyint(1) unsigned default NULL,
-			`section` varchar(255) default NULL,
-			`priority` int(10) unsigned default NULL,
-			`block` varchar(31) default NULL,
-			`target` varchar(63) default NULL,
-			`content` text,
-			PRIMARY KEY	(`id`),
-			KEY `active` (`active`),
-			KEY `section` (`section`),
-			KEY `block` (`block`),
-			KEY `target` (`target`)
-		');
+            `id` int(10) unsigned NOT NULL auto_increment,
+            `caption` varchar(255) default NULL,
+            `description` varchar(255) default NULL,
+            `active` tinyint(1) unsigned default NULL,
+            `section` varchar(255) default NULL,
+            `priority` int(10) unsigned default NULL,
+            `block` varchar(31) default NULL,
+            `target` varchar(63) default NULL,
+            `content` text,
+            PRIMARY KEY (`id`),
+            KEY `active` (`active`),
+            KEY `section` (`section`),
+            KEY `block` (`block`),
+            KEY `target` (`target`)
+        ');
     }
 
     /**
@@ -210,7 +210,7 @@ class Blocks extends Plugin
     /**
      * Подставляет блоки в отрисованную страницу
      *
-     * @param string $text	Содержимое страницы
+     * @param string $text Содержимое страницы
      *
      * @return string
      */
@@ -328,7 +328,7 @@ class Blocks extends Plugin
     /**
      * Возвращает диалог добавления блока
      *
-     * @return string	HTML
+     * @return string HTML
      */
     private function create()
     {
@@ -450,12 +450,12 @@ class Blocks extends Plugin
     /**
      * Подставляет блоки в текст
      *
-     * @param string $source	Исходный текст
-     * @param string $target	"page" или "template"
+     * @param string $html   исходный текст
+     * @param string $target  "page" или "template"
      *
-     * @return string	Обработанный текст
+     * @return string Обработанный текст
      */
-    private function renderBlocks($source, $target)
+    private function renderBlocks($html, $target)
     {
         /** @var TAdminUI $page */
         $page = Eresus_Kernel::app()->getPage();
@@ -480,20 +480,20 @@ class Blocks extends Plugin
             )
             ->orderBy('priority', ezcQuerySelect::DESC);
 
-        preg_match_all('/\$\(Blocks:([^\)]+)\)/', $source, $blocks);
+        preg_match_all('/\$\(Blocks:([^\)]+)\)/', $html, $blocks);
         foreach ($blocks[1] as $blockName)
         {
             try
             {
                 $item = DB::fetch($q);
-                $source = str_replace('$(Blocks:'.$blockName.')', trim($item['content']), $source);
+                $html = str_replace('$(Blocks:'.$blockName.')', trim($item['content']), $html);
             }
             catch (DBQueryException $e)
             {
                 Core::logException($e);
             }
         }
-        return $source;
+        return $html;
     }
 }
 
