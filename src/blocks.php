@@ -224,7 +224,9 @@ class Blocks extends Plugin
     {
         /** @var TClientUI $page */
         $page = Eresus_Kernel::app()->getPage();
-        $page->template = $this->renderBlocks($page->template, 'template');
+        $template = Templates::getInstance()->load($page->getTemplateName());
+        $source = $this->renderBlocks($template->getSource(), 'template');
+        $template->setSource($source);
         return $text;
     }
 
